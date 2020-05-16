@@ -1,0 +1,48 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:9.6
+    container_name: db
+    environment:
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_DB=${DB_DATABASE}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - PGPASSWORD=${DB_PASSWORD}
+      - PGDATA=/var/lib/postgresql/data/pgdata/db
+    ports:
+      - 5432:5432
+    volumes:
+      - db_data:/var/lib/postgresql/data/pgdata/db
+
+  nginx:
+    container_name: nginx
+    build:
+      context: ./../
+      dockerfile: ./devops/nginx/Dockerfile
+    volumes:
+      - ./../${PROJECT_NAME}:/var/www/html
+    links:
+      - php:php
+    ports:
+      - 80:80
+    environment:
+      - REMOTE_DEBUG_HOST
+
+  php:
+    container_name: php
+    build:
+      context: ./../
+      dockerfile: ./devops/php-fpm/Dockerfile
+    volumes:
+      - ./../${PROJECT_NAME}:/var/www/html
+    environment:
+      - PHP_IDE_CONFIG=serverName=server
+      - REMOTE_DEBUG_HOST
+      - REMOTE_DEBUG_PORT
+    depends_on:
+      - db
+
+volumes:
+  db_data:
+    driver: local
